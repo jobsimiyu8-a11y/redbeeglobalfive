@@ -1,16 +1,46 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { ViewProvider, useView } from "@/lib/view-context";
+import { AuthProvider } from "@/lib/auth-context";
+import RedBeeNavbar from "@/components/RedBeeNavbar";
+import MobileBottomNav from "@/components/MobileBottomNav";
+import SocialFeedView from "@/views/SocialFeedView";
+import ProviderProfileView from "@/views/ProviderProfileView";
+import AgencyProfileView from "@/views/AgencyProfileView";
+import DiscoverView from "@/views/DiscoverView";
+import BookingsView from "@/views/BookingsView";
+import DashboardView from "@/views/DashboardView";
+import RegisterView from "@/views/RegisterView";
+import LoginView from "@/views/LoginView";
+import MessengerView from "@/views/MessengerView";
+import SettingsView from "@/views/SettingsView";
 
-// IMPORTANT: Fully REPLACE this with your own code
-const PlaceholderIndex = () => {
-  // PLACEHOLDER: Replace this entire return statement with the user's app.
-  // The inline background color is intentionally not part of the design system.
+function ViewRouter() {
+  const { currentView } = useView();
+
   return (
-    <div className="flex min-h-screen items-center justify-center" style={{ backgroundColor: '#fcfbf8' }}>
-      <img data-lovable-blank-page-placeholder="REMOVE_THIS" src="/placeholder.svg" alt="Your app will live here!" />
+    <div className="min-h-screen pt-[var(--nav-h)]">
+      {currentView === "feed" && <SocialFeedView />}
+      {currentView === "discover" && <DiscoverView />}
+      {currentView === "provider-page" && <ProviderProfileView />}
+      {currentView === "agency-page" && <AgencyProfileView />}
+      {currentView === "bookings" && <BookingsView />}
+      {currentView === "dashboard" && <DashboardView />}
+      {currentView === "my-profile" && <ProviderProfileView />}
+      {currentView === "register" && <RegisterView />}
+      {currentView === "login" && <LoginView />}
+      {currentView === "messenger" && <MessengerView />}
+      {currentView === "settings" && <SettingsView />}
     </div>
   );
-};
+}
 
-const Index = PlaceholderIndex;
-
-export default Index;
+export default function Index() {
+  return (
+    <AuthProvider>
+      <ViewProvider>
+        <RedBeeNavbar />
+        <ViewRouter />
+        <MobileBottomNav />
+      </ViewProvider>
+    </AuthProvider>
+  );
+}
