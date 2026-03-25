@@ -4,7 +4,8 @@ import { useAuth } from "@/lib/auth-context";
 import { allUsers } from "@/lib/mock-data";
 import {
   Camera, Edit3, BadgeCheck, MapPin, Star, Users, Phone, MessageSquare, Video,
-  Heart, MessageCircle, Share2, Settings, Mail, Globe, Calendar, Shield, Upload, X, Image
+  Heart, MessageCircle, Share2, Settings, Mail, Globe, Calendar, Shield, Upload, X, Image,
+  Move, Type, Hash, Palette
 } from "lucide-react";
 
 export default function ProviderProfileView() {
@@ -31,32 +32,24 @@ export default function ProviderProfileView() {
         phone: "+254 700 000 000",
         tags: ["#Premium", "#TopRated"],
         service: authUser?.role === "provider" ? "Digital Services" : undefined,
+        lastSeen: "Just now",
       }
     : mockUser || {
-        name: "Unknown",
-        username: "unknown",
-        avatar: "",
-        coverPhoto: "https://picsum.photos/seed/default/1200/400",
-        bio: "",
-        role: "user" as const,
-        isVerified: false,
-        isOnline: false,
-        location: "",
-        followers: 0,
-        following: 0,
-        rating: 0,
-        phone: "",
-        tags: [],
-        service: undefined,
+        name: "Unknown", username: "unknown", avatar: "", coverPhoto: "https://picsum.photos/seed/default/1200/400",
+        bio: "", role: "user" as const, isVerified: false, isOnline: false, location: "",
+        followers: 0, following: 0, rating: 0, phone: "", tags: [], service: undefined, lastSeen: "Unknown",
       };
 
   const [coverPhoto, setCoverPhoto] = useState(profileData.coverPhoto);
   const [avatar, setAvatar] = useState(profileData.avatar);
   const [showCoverMenu, setShowCoverMenu] = useState(false);
   const [showAvatarMenu, setShowAvatarMenu] = useState(false);
+  const [showAvatarModal, setShowAvatarModal] = useState(false);
   const [editBio, setEditBio] = useState(false);
   const [bio, setBio] = useState(profileData.bio);
-  const [activeTab, setActiveTab] = useState<"posts" | "about" | "reviews" | "media">("posts");
+  const [bannerText, setBannerText] = useState("");
+  const [showBannerEditor, setShowBannerEditor] = useState(false);
+  const [activeTab, setActiveTab] = useState<"posts" | "about" | "reviews" | "media" | "services">("posts");
   const [isFollowing, setIsFollowing] = useState(false);
   const coverInputRef = useRef<HTMLInputElement>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
@@ -81,6 +74,9 @@ export default function ProviderProfileView() {
     setShowAvatarMenu(false);
   };
 
+  const presenceStatus = profileData.isOnline ? "🟢 Online" :
+    (profileData as any).lastSeen === "Just now" ? "🟡 Away" : "⚫ Offline";
+
   return (
     <div className="max-w-3xl mx-auto pb-20 md:pb-8">
       {/* Cover Photo */}
@@ -88,21 +84,35 @@ export default function ProviderProfileView() {
         <img src={coverPhoto} alt="Cover" className="w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
 
+        {/* Banner text overlay */}
+        {bannerText && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <h2 className="text-3xl font-display font-bold text-primary-foreground drop-shadow-lg text-center px-4">{bannerText}</h2>
+          </div>
+        )}
+
         {isOwnProfile && (
-          <div className="absolute top-3 right-3">
+          <div className="absolute top-3 right-3 flex gap-2">
+            <button onClick={() => setShowBannerEditor(!showBannerEditor)}
+              className="px-3 py-1.5 rounded-lg bg-card/80 backdrop-blur text-xs font-medium text-foreground hover:bg-card flex items-center gap-1.5">
+              <Type className="w-3.5 h-3.5" /> Banner Text
+            </button>
             <button onClick={() => setShowCoverMenu(!showCoverMenu)}
               className="px-3 py-1.5 rounded-lg bg-card/80 backdrop-blur text-xs font-medium text-foreground hover:bg-card flex items-center gap-1.5">
               <Camera className="w-3.5 h-3.5" /> Edit Cover
             </button>
             {showCoverMenu && (
-              <div className="absolute right-0 top-full mt-1 bg-card border border-border rounded-xl shadow-xl py-1 w-44 z-10">
+              <div className="absolute right-0 top-full mt-1 bg-card border border-border rounded-xl shadow-xl py-1 w-48 z-10">
                 <button onClick={() => coverInputRef.current?.click()}
                   className="w-full text-left px-3 py-2 text-sm hover:bg-accent flex items-center gap-2">
                   <Upload className="w-4 h-4" /> Upload Photo
                 </button>
-                <button onClick={() => { setCoverPhoto("https://picsum.photos/seed/newcover/1200/400"); setShowCoverMenu(false); }}
+                <button onClick={() => { setCoverPhoto(`https://picsum.photos/seed/${Date.now()}/1200/400`); setShowCoverMenu(false); }}
                   className="w-full text-left px-3 py-2 text-sm hover:bg-accent flex items-center gap-2">
                   <Image className="w-4 h-4" /> Choose Photo
+                </button>
+                <button className="w-full text-left px-3 py-2 text-sm hover:bg-accent flex items-center gap-2">
+                  <Move className="w-4 h-4" /> Reposition
                 </button>
                 <button onClick={() => { setCoverPhoto("https://picsum.photos/seed/default/1200/400"); setShowCoverMenu(false); }}
                   className="w-full text-left px-3 py-2 text-sm hover:bg-accent flex items-center gap-2 text-destructive">
@@ -112,6 +122,16 @@ export default function ProviderProfileView() {
             )}
           </div>
         )}
+
+        {/* Banner text editor */}
+        {showBannerEditor && isOwnProfile && (
+          <div className="absolute bottom-3 left-3 right-3 bg-card/90 backdrop-blur rounded-lg p-3 flex gap-2">
+            <input value={bannerText} onChange={e => setBannerText(e.target.value)} placeholder="Enter banner text (e.g. Borrow, Thrive)"
+              className="flex-1 bg-muted rounded px-3 py-1.5 text-sm text-foreground focus:outline-none" />
+            <button onClick={() => setShowBannerEditor(false)} className="px-3 py-1.5 rounded redbee-gradient-bg text-primary-foreground text-xs font-semibold">Save</button>
+          </div>
+        )}
+
         <input ref={coverInputRef} type="file" accept="image/*" className="hidden" onChange={handleCoverUpload} />
       </div>
 
@@ -120,7 +140,7 @@ export default function ProviderProfileView() {
         <div className="flex items-end gap-4">
           <div className="relative">
             <div className="w-28 h-28 rounded-full border-4 border-background overflow-hidden group cursor-pointer"
-              onClick={() => isOwnProfile && setShowAvatarMenu(!showAvatarMenu)}>
+              onClick={() => isOwnProfile ? setShowAvatarMenu(!showAvatarMenu) : setShowAvatarModal(true)}>
               <img src={avatar} alt="Avatar" className="w-full h-full object-cover bg-muted" />
               {isOwnProfile && (
                 <div className="absolute inset-0 bg-background/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-full">
@@ -128,18 +148,24 @@ export default function ProviderProfileView() {
                 </div>
               )}
             </div>
-            {profileData.isOnline && (
+            {profileData.isOnline ? (
               <span className="absolute bottom-1 right-1 w-4 h-4 rounded-full border-3 border-background status-online animate-pulse-dot" />
+            ) : (
+              <span className="absolute bottom-1 right-1 w-4 h-4 rounded-full border-3 border-background status-offline" />
             )}
-            {showAvatarMenu && (
-              <div className="absolute top-full mt-1 left-0 bg-card border border-border rounded-xl shadow-xl py-1 w-44 z-10">
+            {showAvatarMenu && isOwnProfile && (
+              <div className="absolute top-full mt-1 left-0 bg-card border border-border rounded-xl shadow-xl py-1 w-48 z-10">
+                <button onClick={() => { setShowAvatarModal(true); setShowAvatarMenu(false); }}
+                  className="w-full text-left px-3 py-2 text-sm hover:bg-accent flex items-center gap-2">
+                  <Image className="w-4 h-4" /> See Profile Picture
+                </button>
                 <button onClick={() => avatarInputRef.current?.click()}
                   className="w-full text-left px-3 py-2 text-sm hover:bg-accent flex items-center gap-2">
                   <Upload className="w-4 h-4" /> Upload Photo
                 </button>
-                <button onClick={() => { setShowAvatarMenu(false); }}
+                <button onClick={() => { setAvatar(`https://api.dicebear.com/7.x/avataaars/svg?seed=${Date.now()}`); setShowAvatarMenu(false); }}
                   className="w-full text-left px-3 py-2 text-sm hover:bg-accent flex items-center gap-2">
-                  <Image className="w-4 h-4" /> See Profile Picture
+                  <Palette className="w-4 h-4" /> Choose Avatar
                 </button>
               </div>
             )}
@@ -155,9 +181,10 @@ export default function ProviderProfileView() {
               )}
             </div>
             <p className="text-sm text-muted-foreground">@{profileData.username}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">{presenceStatus}</p>
           </div>
 
-          <div className="flex gap-2 pb-2">
+          <div className="flex gap-2 pb-2 flex-wrap">
             {!isOwnProfile ? (
               <>
                 <button onClick={() => setIsFollowing(!isFollowing)}
@@ -190,6 +217,17 @@ export default function ProviderProfileView() {
           )}
         </div>
 
+        {/* Tags */}
+        {profileData.tags && profileData.tags.length > 0 && (
+          <div className="flex flex-wrap gap-2 mt-2">
+            {profileData.tags.map(tag => (
+              <span key={tag} className="px-2 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium flex items-center gap-1">
+                <Hash className="w-3 h-3" />{tag.replace("#", "")}
+              </span>
+            ))}
+          </div>
+        )}
+
         {/* Stats */}
         <div className="flex items-center gap-6 mt-4">
           <div className="text-center">
@@ -214,27 +252,28 @@ export default function ProviderProfileView() {
 
         {/* Contact buttons */}
         {!isOwnProfile && profileData.role !== "user" && (
-          <div className="flex items-center gap-2 mt-4 p-3 rounded-xl bg-muted/50 border border-border">
+          <div className="flex flex-wrap items-center gap-2 mt-4 p-3 rounded-xl bg-muted/50 border border-border">
             <span className="text-sm text-muted-foreground mr-auto">{profileData.phone}</span>
-            <button className="contact-btn bg-primary/10 text-primary"><Phone className="w-4 h-4" /> Call</button>
-            <button className="contact-btn bg-green-500/10 text-green-400"><MessageSquare className="w-4 h-4" /> WhatsApp</button>
+            <a href={`tel:${(profileData.phone || "").replace(/\s/g, "")}`} className="contact-btn bg-primary/10 text-primary"><Phone className="w-4 h-4" /> Call</a>
+            <a href={`https://wa.me/${(profileData.phone || "").replace(/[\s+]/g, "")}`} target="_blank" rel="noreferrer" className="contact-btn bg-green-500/10 text-green-400"><MessageSquare className="w-4 h-4" /> WhatsApp</a>
             <button className="contact-btn bg-blue-500/10 text-blue-400"><Video className="w-4 h-4" /> Video</button>
             <button onClick={() => navigate("messenger", { chatWith: userId })} className="contact-btn bg-secondary/10 text-secondary"><Mail className="w-4 h-4" /> DM</button>
           </div>
         )}
 
-        {/* Tags */}
-        {profileData.tags && profileData.tags.length > 0 && (
-          <div className="flex flex-wrap gap-2 mt-3">
-            {profileData.tags.map(tag => (
-              <span key={tag} className="px-2 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium">{tag}</span>
-            ))}
+        {/* DM button for regular users too */}
+        {!isOwnProfile && profileData.role === "user" && (
+          <div className="flex gap-2 mt-4">
+            <button onClick={() => navigate("messenger", { chatWith: userId })}
+              className="flex-1 py-2.5 rounded-xl bg-muted text-foreground text-sm font-semibold hover:bg-accent flex items-center justify-center gap-2">
+              <Mail className="w-4 h-4" /> Send DM
+            </button>
           </div>
         )}
 
         {/* Profile Tabs */}
         <div className="flex border-b border-border mt-6 -mx-4 px-4 overflow-x-auto scrollbar-hide">
-          {(["posts", "about", "reviews", "media"] as const).map(tab => (
+          {(["posts", "about", "reviews", "media", "services"] as const).map(tab => (
             <button key={tab} onClick={() => setActiveTab(tab)}
               className={activeTab === tab ? "feed-tab feed-tab-active capitalize" : "feed-tab capitalize"}>
               {tab}
@@ -258,12 +297,31 @@ export default function ProviderProfileView() {
               {profileData.isVerified && (
                 <div className="flex items-center gap-3 text-sm"><Shield className="w-4 h-4 text-primary" /> <span className="text-foreground">Verified Professional</span></div>
               )}
+              {profileData.service && (
+                <div className="flex items-center gap-3 text-sm"><Star className="w-4 h-4 text-secondary" /> <span className="text-foreground">{profileData.service}</span></div>
+              )}
             </div>
           )}
           {activeTab === "reviews" && (
-            <div className="text-center py-12 text-muted-foreground text-sm">
-              <Star className="w-8 h-8 mx-auto mb-2 opacity-50" />
-              No reviews yet.
+            <div className="space-y-3">
+              {[
+                { name: "Grace W.", text: "Excellent service! Very professional and on time.", rating: 5, time: "2d ago" },
+                { name: "David O.", text: "Good work, would recommend to others.", rating: 4, time: "1w ago" },
+                { name: "Amina N.", text: "Very reliable and affordable. Will use again!", rating: 5, time: "2w ago" },
+              ].map((review, i) => (
+                <div key={i} className="redbee-card p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-semibold text-foreground">{review.name}</span>
+                    <span className="text-xs text-muted-foreground">{review.time}</span>
+                  </div>
+                  <div className="flex gap-0.5 mb-2">
+                    {Array.from({ length: review.rating }, (_, j) => (
+                      <Star key={j} className="w-3 h-3 text-secondary fill-secondary" />
+                    ))}
+                  </div>
+                  <p className="text-sm text-foreground/80">{review.text}</p>
+                </div>
+              ))}
             </div>
           )}
           {activeTab === "media" && (
@@ -275,8 +333,45 @@ export default function ProviderProfileView() {
               ))}
             </div>
           )}
+          {activeTab === "services" && profileData.role !== "user" && (
+            <div className="space-y-3">
+              {[
+                { name: "Basic Service", price: "KES 2,000", desc: "Standard service package" },
+                { name: "Premium Service", price: "KES 5,000", desc: "Includes consultation + service" },
+                { name: "Emergency/Rush", price: "KES 8,000", desc: "Same-day urgent service" },
+              ].map((svc, i) => (
+                <div key={i} className="redbee-card p-4 flex items-center justify-between">
+                  <div>
+                    <h4 className="text-sm font-semibold text-foreground">{svc.name}</h4>
+                    <p className="text-xs text-muted-foreground">{svc.desc}</p>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-sm font-bold text-secondary">{svc.price}</span>
+                    <button className="block mt-1 text-xs text-primary font-medium hover:underline">Book</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          {activeTab === "services" && profileData.role === "user" && (
+            <div className="text-center py-12 text-muted-foreground text-sm">
+              Not a provider account.
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Avatar modal */}
+      {showAvatarModal && (
+        <div className="fixed inset-0 z-50 bg-background/90 flex items-center justify-center" onClick={() => setShowAvatarModal(false)}>
+          <div className="relative">
+            <img src={avatar} alt="Profile" className="max-w-[80vw] max-h-[80vh] rounded-2xl object-cover" />
+            <button onClick={() => setShowAvatarModal(false)} className="absolute top-3 right-3 p-2 bg-card/80 rounded-full">
+              <X className="w-5 h-5 text-foreground" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
